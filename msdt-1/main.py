@@ -1,17 +1,16 @@
-from scholarly import scholarly
-from scholarly import ProxyGenerator
+import io
 import json
+import logging
+import os
+import smtplib
+import sys
 import threading
 import time
-import sys
-import io
 from contextlib import redirect_stdout
-import os
-import time 
+from concurrent.futures import ThreadPoolExecutor
+
 import boto3
-import smtplib, ssl
-import logging
-import concurrent.futures
+from scholarly import ProxyGenerator, scholarly
 
 
 # This script takes 1 argument
