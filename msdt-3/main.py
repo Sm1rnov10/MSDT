@@ -70,4 +70,3 @@ if __name__ == "__main__":
         "checksum": summ
     }
     write_json_file(RESULT, result)
-
