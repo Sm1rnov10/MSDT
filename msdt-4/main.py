@@ -1,9 +1,21 @@
 import time
 import random
+import logging
 import tkinter as tk
 from enum import Enum
+from typing import Union
 
-from paths import PRESS_PATH, UNPRESS_PATH, TEXT
+from paths import PRESS_PATH, UNPRESS_PATH, TEXT, PATH_LOG
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] [%(funcName)s] %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(PATH_LOG, encoding='utf-8')
+    ]
+)
 
 
 class python_snake:
@@ -18,6 +30,7 @@ class python_snake:
         """
         Инициализация змейки и игрового поля.
         """
+        logging.info("Initializing the Snake game")
         self.__started = 1
         self.__spped = 10
         self.__window = window
@@ -33,6 +46,7 @@ class python_snake:
         self.canv.place(x=self.__canv_x, y=self.__canv_y)
         self.create_head_food()
 
+        logging.info("Binding controls to keyboard events")
         self.__window.bind('<d>', self.right)
         self.__window.bind('<D>', self.right)
         self.__window.bind('<Right>', self.right)
@@ -72,18 +86,22 @@ class python_snake:
 
     def right(self, event: tk.Event) -> None:
         """Обработчик клавиши 'вправо'."""
+        logging.info("Changing direction to RIGHT")
         self.__vector = self.CONST.RIGHT.value
 
     def down(self, event: tk.Event) -> None:
         """Обработчик клавиши 'вниз'."""
+        logging.info("Changing direction to DOWN")
         self.__vector = self.CONST.DOWN.value
 
     def left(self, event: tk.Event) -> None:
         """Обработчик клавиши 'влево'."""
+        logging.info("Changing direction to LEFT")
         self.__vector = self.CONST.LEFT.value
 
     def up(self, event: tk.Event) -> None:
         """Обработчик клавиши 'вверх'."""
+        logging.info("Changing direction to UP")
         self.__vector = self.CONST.UP.value
 
     def speed_key(self, event: tk.Event) -> None:
@@ -92,8 +110,10 @@ class python_snake:
         Увеличивает или уменьшает скорость змейки.
         """
         if event.keysym == 'KP_Add' or event.keysym == 'plus':
+            logging.info("Increasing speed")
             self.speed('+')
         elif event.keysym == 'KP_Subtract' or event.keysym == 'minus':
+            logging.info("Decreasing speed")
             self.speed('-')
 
     def create_head_food(self) -> None:
@@ -101,6 +121,7 @@ class python_snake:
         Создает голову змейки, еду и начальное тело.
         """
         rand_vect = random.randint(1, 4)
+        logging.info("Creating the snake's head and initial body")
         if rand_vect == 1:
             self.__vector = self.CONST.RIGHT.value
         elif rand_vect == 2:
@@ -122,6 +143,7 @@ class python_snake:
         self.step('add')
         self.step('add')
         self.step('add')
+        logging.info("Snake and food created successfully")
 
     def speed(self, way: str) -> None:
         """
@@ -129,13 +151,16 @@ class python_snake:
         """
         if way == '+' and self.__spped > 1:
             self.__spped -= 1
+            logging.info(f"Speed increased. Current speed: {self.__spped}")
         elif way == '-' and self.__spped < 20:
             self.__spped += 1
+            logging.info(f"Speed decreased. Current speed: {self.__spped}")
 
     def reload(self) -> None:
         """
         Перезапускает игру, сбрасывая все параметры и начальные условия.
         """
+        logging.info("Reloading the game")
         self.quit = 'n'
         self.__started = 1
         self.__spped = 10
@@ -147,11 +172,13 @@ class python_snake:
 
     def quit(self, event: tk.Event) -> None:
         """Останавливает игру (пауза)."""
+        logging.info("Game paused")
         self.quit = 'y'
 
     def move(self, event: tk.Event) -> None:
         """Запускает движение змейки, если игра не на паузе."""
         if self.quit != 'n':
+            logging.info("Starting snake movement")
             self.start()
 
     def start(self) -> None:
@@ -159,6 +186,7 @@ class python_snake:
         Основной игровой цикл. Управляет движением змейки,
         проверкой столкновений и поеданием пищи.
         """
+        logging.info("Game started")
         if self.__started == 1:
             self.quit = 'n'
             i = 0
@@ -166,18 +194,22 @@ class python_snake:
             while i == 0:
                 self.step(add)
                 if self.food.eat(self) == 1:
+                    logging.info("Food eaten")
                     add = 'add'
                     self.speed('+')
                 elif add == 'add':
                     add = 'del'
                 if self.bump_wall() == 'the end':
+                    logging.warning("Snake collided with wall")
                     break
                 if self.bump_body() == 'the end':
+                    logging.warning("Snake collided with itself")
                     break
                 for x in range(1, (self.__spped + 1)):
                     time.sleep(0.05)
                     self.__window.update()
                     if self.quit == 'y':
+                        logging.info("Game paused during gameplay")
                         i = 1
                         break
 
@@ -194,6 +226,7 @@ class python_snake:
             or (__head_y > (self.canv_height
                             - (self.CONST.SNAKE_THICKNESS.value//2)+1))):
             self.explosive()
+            logging.warning("Collision with wall detected")
             return 'the end'
         else:
             return 0
@@ -209,6 +242,7 @@ class python_snake:
             if ((__head_x == self.body[i]['x'])
                     and (__head_y == self.body[i]['y'])):
                 self.explosive()
+                logging.warning("Collision with the snake's body detected")
                 bump = 'the end'
         return bump
 
@@ -216,6 +250,7 @@ class python_snake:
         """
         Отображает взрыв на холсте в случае столкновения змейки.
         """
+        logging.info("Displaying explosion animation")
         self.__started = 0
         self.canv.create_oval((self.body[-1]['x']
                                - self.CONST.EXPLOSIVE.value),
@@ -263,6 +298,7 @@ class python_snake:
             """
             Создает новую еду в случайной позиции на холсте.
             """
+            logging.info("Creating new food at a random position")
             self.food.x = random.randint(self.CONST.FOOD_THICKNESS.value
                                          // 2, self.canv_width
                                          - self.CONST.FOOD_THICKNESS.value//2)
@@ -276,6 +312,7 @@ class python_snake:
                                                 self.CONST.FOOD_THICKNESS.value,
                                                 self.CONST.FOOD_COLOR.value)
             self.food.id = self.food.body.draw()
+            logging.info(f"Food created at ({self.food.x}, {self.food.y})")
 
         def eat(self) -> None:
             """
@@ -294,6 +331,7 @@ class python_snake:
                 and (head_y - self.CONST.SNAKE_THICKNESS.value // 2 <
                     self.food.y + self.CONST.FOOD_THICKNESS.value // 2)
             ):
+                logging.info("Food eaten by snake!")
                 self.canv.delete(self.food.id)
                 self.food.add(self)
                 eat = 1
@@ -311,6 +349,7 @@ class python_snake:
             self.color = color
             if (self.d % 2) == 0:
                 self.d += 1
+            logging.debug(f"Element created at ({self.x}, {self.y}) with size {self.d} and color {self.color}")
 
         def draw(self) -> None:
             """
@@ -318,6 +357,7 @@ class python_snake:
             """
             x = self.x-(self.d//2)
             y = self.y-(self.d//2)
+            logging.info(f"Drawing element at ({x}, {y}) with size {self.d}")
             return self.self_glob.canv.create_rectangle(x, y, x+self.d,
                                                         y+self.d,
                                                         fill=self.color,
@@ -328,22 +368,27 @@ def main() -> None:
     """
     Основная функция, запускающая приложение "Змейка".
     """
+    logging.info("Starting the Snake game application")
     image1_data = PRESS_PATH
     image2_data = UNPRESS_PATH
 
     def button_press(a) -> None:
         """Меняет изображение кнопки при нажатии."""
+        logging.info("Reload button pressed")
         reload_button['image'] = reload_button_img2
         snake.reload()
 
     def button_unpress(a) -> None:
         """Возвращает изображение кнопки при отпускании."""
+        logging.info("Reload button released")
         reload_button['image'] = reload_button_img1
 
+    logging.info("Initializing the main tkinter window")
     root = tk.Tk()
     root.title('Программа Змейка на питоне в графике')
     root.geometry('800x600+150+150')
 
+    logging.info("Setting up the main window frame and text")
     frame = tk.Frame(root, width=740, height=90, bg='#f2ffe0')
     frame.place(x=30, y=5)
     text = tk.Label(root, text=TEXT, bg='#f2ffe0', width=79)
@@ -355,9 +400,12 @@ def main() -> None:
     reload_button.bind('<Button-1>', button_press)
     reload_button.bind('<ButtonRelease-1>', button_unpress)
 
+    logging.info("Creating Snake game instance")
     snake = python_snake(root, 30, 100, 740, 470)
+    logging.info("Starting the Snake game")
     snake.start()
 
+    logging.info("Running the main tkinter event loop")
     root.mainloop()
 
 
